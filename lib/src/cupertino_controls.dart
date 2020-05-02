@@ -3,9 +3,12 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:chewie/src/chewie_player.dart';
+import 'package:chewie/chromecast/service_discovery.dart';
+import 'package:chewie/chromecast/device_picker.dart';
 import 'package:chewie/src/chewie_progress_colors.dart';
 import 'package:chewie/src/cupertino_progress_bar.dart';
 import 'package:chewie/src/utils.dart';
+import 'package:dart_chromecast/casting/cast.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:open_iconic_flutter/open_iconic_flutter.dart';
@@ -37,6 +40,33 @@ class _CupertinoControlsState extends State<CupertinoControls> {
 
   VideoPlayerController controller;
   ChewieController chewieController;
+
+  ServiceDiscovery _serviceDiscovery;
+  CastSender _castSender;
+
+  bool connected = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _serviceDiscovery = ServiceDiscovery();
+    _serviceDiscovery.startDiscovery();
+  }
+
+  void _connectToDevice(CastDevice device) async {
+    _castSender = CastSender(device);
+    connected = await _castSender.connect();
+    if (!connected) {
+      // show error message...
+      return;
+    }
+
+    setState(() {});
+
+    //if you want to connect to your custom app, send AppID as a parameter i.e. _castSender.launch("appId")
+    _castSender.launch();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -277,6 +307,53 @@ class _CupertinoControlsState extends State<CupertinoControls> {
     );
   }
 
+  GestureDetector _buildCastButton(
+    VideoPlayerController controller,
+    Color backgroundColor,
+    Color iconColor,
+    double barHeight,
+    double buttonPadding,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (_) => DevicePicker(
+            serviceDiscovery: _serviceDiscovery,
+            onDevicePicked: _connectToDevice
+          )
+        );
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10.0),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 10.0),
+            child: Container(
+              color: backgroundColor,
+              child: Container(
+                height: barHeight,
+                padding: EdgeInsets.only(
+                  left: buttonPadding,
+                  right: buttonPadding,
+                ),
+                child: Icon(
+                  connected
+                      ? Icons.cast_connected
+                      : Icons.cast,
+                  color: iconColor,
+                  size: 16.0,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   GestureDetector _buildPlayPause(
     VideoPlayerController controller,
     Color iconColor,
@@ -400,6 +477,7 @@ class _CupertinoControlsState extends State<CupertinoControls> {
                   backgroundColor, iconColor, barHeight, buttonPadding)
               : Container(),
           Expanded(child: Container()),
+          _buildCastButton(controller, backgroundColor, iconColor, barHeight, buttonPadding),
           chewieController.allowMuting
               ? _buildMuteButton(controller, backgroundColor, iconColor,
                   barHeight, buttonPadding)
@@ -510,19 +588,32 @@ class _CupertinoControlsState extends State<CupertinoControls> {
       if (controller.value.isPlaying) {
         _hideStuff = false;
         _hideTimer?.cancel();
-        controller.pause();
+        if (connected) {
+          _castSender.pause();
+        } else {
+          controller.pause();
+        }
       } else {
         _cancelAndRestartTimer();
 
         if (!controller.value.initialized) {
           controller.initialize().then((_) {
-            controller.play();
+            if (connected) {
+              _castSender.play();
+            } else {
+              controller.play();
+            }
           });
         } else {
           if (isFinished) {
             controller.seekTo(Duration(seconds: 0));
           }
-          controller.play();
+
+          if (connected) {
+            _castSender.play();
+          } else {
+            controller.play();
+          }
         }
       }
     });
