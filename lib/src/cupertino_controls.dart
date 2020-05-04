@@ -60,6 +60,13 @@ class _CupertinoControlsState extends State<CupertinoControls> {
     if (!connected) {
       // show error message...
       return;
+    } else {
+      _castSender.load(
+        CastMedia(
+          title: 'Test Video Title',
+          contentId: controller.dataSource,
+        )
+      );
     }
 
     setState(() {});
