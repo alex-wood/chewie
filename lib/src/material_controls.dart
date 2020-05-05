@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:chewie/chromecast/device_picker.dart';
+import 'package:chewie/chromecast/service_discovery.dart';
 import 'package:chewie/src/chewie_player.dart';
 import 'package:chewie/src/chewie_progress_colors.dart';
 import 'package:chewie/src/material_progress_bar.dart';
 import 'package:chewie/src/utils.dart';
+import 'package:dart_chromecast/casting/cast.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -31,6 +34,40 @@ class _MaterialControlsState extends State<MaterialControls> {
 
   VideoPlayerController controller;
   ChewieController chewieController;
+
+  ServiceDiscovery _serviceDiscovery;
+  CastSender _castSender;
+
+  bool connected = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _serviceDiscovery = ServiceDiscovery();
+    _serviceDiscovery.startDiscovery();
+  }
+
+  void _connectToDevice(CastDevice device) async {
+    _castSender = CastSender(device);
+    connected = await _castSender.connect();
+    if (!connected) {
+      // show error message...
+      return;
+    } else {
+      _castSender.load(
+        CastMedia(
+          title: '',
+          contentId: controller.dataSource,
+        )
+      );
+    }
+
+    setState(() {});
+
+    //if you want to connect to your custom app, send AppID as a parameter i.e. _castSender.launch("appId")
+    _castSender.launch();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +121,11 @@ class _MaterialControlsState extends State<MaterialControls> {
   }
 
   void _dispose() {
+    if (connected) {
+      _castSender.disconnect();
+      connected = false;
+    }
+
     controller.removeListener(_updateState);
     _hideTimer?.cancel();
     _initTimer?.cancel();
@@ -125,6 +167,7 @@ class _MaterialControlsState extends State<MaterialControls> {
             chewieController.allowMuting
                 ? _buildMuteButton(controller)
                 : Container(),
+            _buildCastButton(controller),
             chewieController.allowFullScreen
                 ? _buildExpandButton()
                 : Container(),
@@ -243,6 +286,48 @@ class _MaterialControlsState extends State<MaterialControls> {
     );
   }
 
+  GestureDetector _buildCastButton(
+    VideoPlayerController controller,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        if (connected) {
+          _castSender.disconnect();
+          connected = false;
+          setState(() {});
+        } else {
+          showDialog(
+            context: context,
+            builder: (_) => DevicePicker(
+              serviceDiscovery: _serviceDiscovery,
+              onDevicePicked: _connectToDevice
+            )
+          );
+        }
+      },
+      child: AnimatedOpacity(
+        opacity: _hideStuff ? 0.0 : 1.0,
+        duration: Duration(milliseconds: 300),
+        child: ClipRect(
+          child: Container(
+            child: Container(
+              height: barHeight,
+              padding: EdgeInsets.only(
+                left: 8.0,
+                right: 8.0,
+              ),
+              child: Icon(
+                connected
+                  ? Icons.cast_connected
+                  : Icons.cast,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   GestureDetector _buildPlayPause(VideoPlayerController controller) {
     return GestureDetector(
       onTap: _playPause,
@@ -270,7 +355,7 @@ class _MaterialControlsState extends State<MaterialControls> {
         : Duration.zero;
 
     return Padding(
-      padding: EdgeInsets.only(right: 24.0),
+      padding: EdgeInsets.only(right: 10.0),
       child: Text(
         '${formatDuration(position)} / ${formatDuration(duration)}',
         style: TextStyle(
@@ -337,19 +422,34 @@ class _MaterialControlsState extends State<MaterialControls> {
       if (controller.value.isPlaying) {
         _hideStuff = false;
         _hideTimer?.cancel();
-        controller.pause();
+        
+        if (connected) {
+          _castSender.pause();
+        } else {
+          controller.pause();
+        }
       } else {
         _cancelAndRestartTimer();
 
         if (!controller.value.initialized) {
           controller.initialize().then((_) {
-            controller.play();
+            if (connected) {
+              _castSender.play();
+            } else {
+              controller.play();
+            }
           });
         } else {
           if (isFinished) {
             controller.seekTo(Duration(seconds: 0));
+            _castSender.seek(0);
           }
-          controller.play();
+
+          if (connected) {
+            _castSender.play();
+          } else {
+            controller.play();
+          }
         }
       }
     });
@@ -372,7 +472,7 @@ class _MaterialControlsState extends State<MaterialControls> {
   Widget _buildProgressBar() {
     return Expanded(
       child: Padding(
-        padding: EdgeInsets.only(right: 20.0),
+        padding: EdgeInsets.only(right: 5.0),
         child: MaterialVideoProgressBar(
           controller,
           onDragStart: () {
