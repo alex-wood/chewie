@@ -625,7 +625,11 @@ class _CupertinoControlsState extends State<CupertinoControls> {
           });
         } else {
           if (isFinished) {
-            controller.seekTo(Duration(seconds: 0));
+            if (connected) {
+              _castSender.seek(0);
+            } else {
+              controller.seekTo(Duration(seconds: 0));
+            }
           }
 
           if (connected) {
