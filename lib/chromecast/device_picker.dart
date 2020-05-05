@@ -51,25 +51,44 @@ class _DevicePickerState extends State<DevicePicker> {
 
   @override
   Widget build(BuildContext context) {
+    if (_devices.isEmpty) {
+      return Dialog(
+        child: Container(
+          height: 50.0,
+          width: 100.0,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(0.0),
+              child: Text('No cast devices available', style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),),
+            ),
+          ])
+        )
+      );
+    }
+
     return Dialog(
       child: Container(
         height: 200.0,
         width: 100.0,
-        child: Column(children: <Widget>[
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text('Pick a casting device', style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),),
-          ),
-          Divider(height: 0.0, color: Colors.black,),
-          Expanded(
-            child: ListView.builder(
-              key: Key('devices-list'),
-              itemBuilder: _buildListViewItem,
-              itemCount: _devices.length,
+        child: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text('Pick a casting device', style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),),
             ),
-          )
-        ],),
-      ),
+            Divider(height: 0.0, color: Colors.black,),
+            Expanded(
+              child: ListView.builder(
+                key: Key('devices-list'),
+                itemBuilder: _buildListViewItem,
+                itemCount: _devices.length,
+              ),
+            )
+          ]
+        )
+      )
     );
   }
 }
