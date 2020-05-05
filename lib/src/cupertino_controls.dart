@@ -63,7 +63,7 @@ class _CupertinoControlsState extends State<CupertinoControls> {
     } else {
       _castSender.load(
         CastMedia(
-          title: 'Test Video Title',
+          title: '',
           contentId: controller.dataSource,
         )
       );
@@ -132,6 +132,11 @@ class _CupertinoControlsState extends State<CupertinoControls> {
   }
 
   void _dispose() {
+    if (connected) {
+      _castSender.disconnect();
+      connected = false;
+    }
+
     controller.removeListener(_updateState);
     _hideTimer?.cancel();
     _expandCollapseTimer?.cancel();
@@ -323,13 +328,19 @@ class _CupertinoControlsState extends State<CupertinoControls> {
   ) {
     return GestureDetector(
       onTap: () {
-        showDialog(
-          context: context,
-          builder: (_) => DevicePicker(
-            serviceDiscovery: _serviceDiscovery,
-            onDevicePicked: _connectToDevice
-          )
-        );
+        if (connected) {
+          _castSender.disconnect();
+          connected = false;
+          setState(() {});
+        } else {
+          showDialog(
+            context: context,
+            builder: (_) => DevicePicker(
+              serviceDiscovery: _serviceDiscovery,
+              onDevicePicked: _connectToDevice
+            )
+          );
+        }
       },
       child: AnimatedOpacity(
         opacity: _hideStuff ? 0.0 : 1.0,
