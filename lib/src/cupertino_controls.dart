@@ -65,6 +65,9 @@ class _CupertinoControlsState extends State<CupertinoControls> {
         CastMedia(
           title: '',
           contentId: controller.dataSource,
+          
+          // TODO: Add a relevant placeholder image if this setting works correctly
+          images: ['https://i.ytimg.com/vi/dCfOxU1uFK8/maxresdefault.jpg']
         )
       );
     }
