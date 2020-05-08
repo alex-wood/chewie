@@ -287,9 +287,17 @@ class _CupertinoControlsState extends State<CupertinoControls> {
 
         if (_latestValue.volume == 0) {
           controller.setVolume(_latestVolume ?? 0.5);
+
+          if (connected) {
+            _castSender.setVolume(_latestVolume ?? 0.5);
+          }
         } else {
           _latestVolume = controller.value.volume;
           controller.setVolume(0.0);
+
+          if (connected) {
+            _castSender.setVolume(0.0);
+          }
         }
       },
       child: AnimatedOpacity(
