@@ -434,32 +434,31 @@ class _MaterialControlsState extends State<MaterialControls> {
         _hideStuff = false;
         _hideTimer?.cancel();
         
+        controller.pause();
+
         if (connected) {
           _castSender.pause();
-        } else {
-          controller.pause();
         }
       } else {
         _cancelAndRestartTimer();
 
         if (!controller.value.initialized) {
           controller.initialize().then((_) {
+            controller.play();
+
             if (connected) {
               _castSender.play();
-            } else {
-              controller.play();
             }
           });
         } else {
           if (isFinished) {
             controller.seekTo(Duration(seconds: 0));
-            _castSender.seek(0);
-          }
-
-          if (connected) {
-            _castSender.play();
-          } else {
             controller.play();
+
+            if (connected) {
+              _castSender.seek(0.0);
+              _castSender.play();
+            }
           }
         }
       }
@@ -486,6 +485,7 @@ class _MaterialControlsState extends State<MaterialControls> {
         padding: EdgeInsets.only(right: 5.0),
         child: MaterialVideoProgressBar(
           controller,
+          _castSender,
           onDragStart: () {
             setState(() {
               _dragging = true;

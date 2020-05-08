@@ -1,11 +1,13 @@
 import 'package:chewie/src/chewie_progress_colors.dart';
+import 'package:dart_chromecast/casting/cast_sender.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:video_player/video_player.dart';
 
 class CupertinoVideoProgressBar extends StatefulWidget {
   CupertinoVideoProgressBar(
-    this.controller, {
+    this.controller,
+    this.castSender, {
     ChewieProgressColors colors,
     this.onDragEnd,
     this.onDragStart,
@@ -13,6 +15,7 @@ class CupertinoVideoProgressBar extends StatefulWidget {
   }) : colors = colors ?? ChewieProgressColors();
 
   final VideoPlayerController controller;
+  final CastSender castSender;
   final ChewieProgressColors colors;
   final Function() onDragStart;
   final Function() onDragEnd;
@@ -33,13 +36,16 @@ class _VideoProgressBarState extends State<CupertinoVideoProgressBar> {
 
   VoidCallback listener;
   bool _controllerWasPlaying = false;
+  bool castSenderConnected = false;
 
   VideoPlayerController get controller => widget.controller;
+  CastSender get castSender => widget.castSender;
 
   @override
   void initState() {
     super.initState();
     controller.addListener(listener);
+    castSenderConnected = castSender?.castSession?.isConnected ?? false;
   }
 
   @override
@@ -56,6 +62,10 @@ class _VideoProgressBarState extends State<CupertinoVideoProgressBar> {
       final double relative = tapPos.dx / box.size.width;
       final Duration position = controller.value.duration * relative;
       controller.seekTo(position);
+
+      if (castSenderConnected) {
+        castSender.seek(position.inSeconds.toDouble());
+      }
     }
 
     return GestureDetector(

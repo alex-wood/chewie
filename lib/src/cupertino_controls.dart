@@ -565,6 +565,7 @@ class _CupertinoControlsState extends State<CupertinoControls> {
         padding: EdgeInsets.only(right: 12.0),
         child: CupertinoVideoProgressBar(
           controller,
+          _castSender,
           onDragStart: () {
             _hideTimer?.cancel();
           },
@@ -636,17 +637,13 @@ class _CupertinoControlsState extends State<CupertinoControls> {
           });
         } else {
           if (isFinished) {
-            if (connected) {
-              _castSender.seek(0);
-            } else {
-              controller.seekTo(Duration(seconds: 0));
-            }
-          }
-
-          if (connected) {
-            _castSender.play();
-          } else {
+            controller.seekTo(Duration(seconds: 0));
             controller.play();
+
+            if (connected) {
+              _castSender.seek(0.0);
+              _castSender.play();
+            }
           }
         }
       }
@@ -657,14 +654,28 @@ class _CupertinoControlsState extends State<CupertinoControls> {
     _cancelAndRestartTimer();
     final beginning = Duration(seconds: 0).inMilliseconds;
     final skip = (_latestValue.position - Duration(seconds: 15)).inMilliseconds;
-    controller.seekTo(Duration(milliseconds: math.max(skip, beginning)));
+
+    final target = Duration(milliseconds: math.max(skip, beginning));
+
+    controller.seekTo(target);
+
+    if (connected) {
+      _castSender.seek(target.inSeconds.toDouble());
+    }
   }
 
   void _skipForward() {
     _cancelAndRestartTimer();
     final end = _latestValue.duration.inMilliseconds;
     final skip = (_latestValue.position + Duration(seconds: 15)).inMilliseconds;
-    controller.seekTo(Duration(milliseconds: math.min(skip, end)));
+
+    final target = Duration(milliseconds: math.min(skip, end));
+
+    controller.seekTo(target);
+
+    if (connected) {
+      _castSender.seek(target.inSeconds.toDouble());
+    }
   }
 
   void _startHideTimer() {
