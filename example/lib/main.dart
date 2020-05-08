@@ -38,7 +38,7 @@ class _ChewieDemoState extends State<ChewieDemo> {
       videoPlayerController: _videoPlayerController1,
       aspectRatio: 3 / 2,
       autoPlay: true,
-      looping: true,
+      // looping: true,
       // Try playing around with some of these other options:
 
       // showControls: false,
@@ -102,7 +102,7 @@ class _ChewieDemoState extends State<ChewieDemo> {
                           videoPlayerController: _videoPlayerController1,
                           aspectRatio: 3 / 2,
                           autoPlay: true,
-                          looping: true,
+                          // looping: true,
                         );
                       });
                     },
@@ -123,7 +123,7 @@ class _ChewieDemoState extends State<ChewieDemo> {
                           videoPlayerController: _videoPlayerController2,
                           aspectRatio: 3 / 2,
                           autoPlay: true,
-                          looping: true,
+                          // looping: true,
                         );
                       });
                     },
