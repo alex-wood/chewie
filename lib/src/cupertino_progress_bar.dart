@@ -45,7 +45,6 @@ class _VideoProgressBarState extends State<CupertinoVideoProgressBar> {
   void initState() {
     super.initState();
     controller.addListener(listener);
-    castSenderConnected = castSender?.castSession?.isConnected ?? false;
   }
 
   @override
@@ -56,6 +55,8 @@ class _VideoProgressBarState extends State<CupertinoVideoProgressBar> {
 
   @override
   Widget build(BuildContext context) {
+    castSenderConnected = castSender?.castSession?.isConnected ?? false;
+
     void seekToRelativePosition(Offset globalPosition) {
       final box = context.findRenderObject() as RenderBox;
       final Offset tapPos = box.globalToLocal(globalPosition);
